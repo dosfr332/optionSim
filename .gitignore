@@ -23,5 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Need to get shadcn to work with tailwind V4
 tailwind.config.js
+
+
