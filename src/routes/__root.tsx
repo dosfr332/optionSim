@@ -28,7 +28,7 @@ export const Route = createRootRoute({
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <NavigationMenuLink className="mr-5 font-light" href="/bsm">
+                  <NavigationMenuLink className="mr-5 font-light" href="./#/bsm">
                     BSM Calculator
                   </NavigationMenuLink>
                 </NavigationMenuItem>
