@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import photo from "@/assets/personal-photo.jpg";
 
-
 export const Route = createFileRoute("/")({
   component: Index,
 });
@@ -18,10 +17,8 @@ function Index() {
           with practical applications.
         </p>
         <p className="text-md mb-5 font-thin">
-          This tool lets you calculate option prices using models like
-          Black-Scholes-Merton analytically and Monte Carlo methods
-          for complex scenarios/models. Adjust parameters, run simulations, and
-          visualize option behavior.
+          This tool lets you play around with differnt option pricing concepts
+          and models. I hope you find it useful and informative.
         </p>
         <p className="mt-10 text-3xl font-light">Getting Started</p>
         <p className="text-md mb-5 font-thin">

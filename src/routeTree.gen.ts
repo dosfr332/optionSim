@@ -13,6 +13,8 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as BsmImport } from './routes/bsm'
 import { Route as IndexImport } from './routes/index'
+import { Route as LimitsPutImport } from './routes/limits/put'
+import { Route as LimitsCallImport } from './routes/limits/call'
 
 // Create/Update Routes
 
@@ -25,6 +27,18 @@ const BsmRoute = BsmImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LimitsPutRoute = LimitsPutImport.update({
+  id: '/limits/put',
+  path: '/limits/put',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LimitsCallRoute = LimitsCallImport.update({
+  id: '/limits/call',
+  path: '/limits/call',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -46,6 +60,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BsmImport
       parentRoute: typeof rootRoute
     }
+    '/limits/call': {
+      id: '/limits/call'
+      path: '/limits/call'
+      fullPath: '/limits/call'
+      preLoaderRoute: typeof LimitsCallImport
+      parentRoute: typeof rootRoute
+    }
+    '/limits/put': {
+      id: '/limits/put'
+      path: '/limits/put'
+      fullPath: '/limits/put'
+      preLoaderRoute: typeof LimitsPutImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -54,36 +82,46 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/bsm': typeof BsmRoute
+  '/limits/call': typeof LimitsCallRoute
+  '/limits/put': typeof LimitsPutRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/bsm': typeof BsmRoute
+  '/limits/call': typeof LimitsCallRoute
+  '/limits/put': typeof LimitsPutRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/bsm': typeof BsmRoute
+  '/limits/call': typeof LimitsCallRoute
+  '/limits/put': typeof LimitsPutRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/bsm'
+  fullPaths: '/' | '/bsm' | '/limits/call' | '/limits/put'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/bsm'
-  id: '__root__' | '/' | '/bsm'
+  to: '/' | '/bsm' | '/limits/call' | '/limits/put'
+  id: '__root__' | '/' | '/bsm' | '/limits/call' | '/limits/put'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BsmRoute: typeof BsmRoute
+  LimitsCallRoute: typeof LimitsCallRoute
+  LimitsPutRoute: typeof LimitsPutRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BsmRoute: BsmRoute,
+  LimitsCallRoute: LimitsCallRoute,
+  LimitsPutRoute: LimitsPutRoute,
 }
 
 export const routeTree = rootRoute
@@ -97,7 +135,9 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/bsm"
+        "/bsm",
+        "/limits/call",
+        "/limits/put"
       ]
     },
     "/": {
@@ -105,6 +145,12 @@ export const routeTree = rootRoute
     },
     "/bsm": {
       "filePath": "bsm.tsx"
+    },
+    "/limits/call": {
+      "filePath": "limits/call.tsx"
+    },
+    "/limits/put": {
+      "filePath": "limits/put.tsx"
     }
   }
 }
