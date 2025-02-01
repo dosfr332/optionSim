@@ -31,8 +31,8 @@ import {
 import { DualRangeSlider } from "@/components/ui/dual-range-slider";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { data as startingSensitivities } from "@/data/starting-sensitivity";;
 import { useTheme } from "@/components/ui/theme-provider";
+import { Slider } from "@/components/ui/slider";
 
 export const Route = createFileRoute("/bsm")({
   component: BSM,
@@ -62,6 +62,7 @@ type SensitivityData = {
       | "riskFreeRate";
   };
   colourParam: "price" | "delta" | "gamma" | "vega" | "theta";
+  numberOfPoints: number;
 };
 
 function BSM() {
@@ -91,6 +92,7 @@ function BSM() {
       },
       colourParam: "price",
       colourScheme: "viridis",
+      numberOfPoints: 20,
     },
     resolver: zodResolver(BSMSensitivitySchema),
   });
@@ -104,9 +106,22 @@ function BSM() {
     riskFreeRate: basicForm.watch("riskFreeRate"),
   });
 
-  const [sensitivityData, setSensitivityData] = useState<SensitivityData>(
-    startingSensitivities,
-  );
+  const [sensitivityData, setSensitivityData] = useState<SensitivityData>({
+    call: [[]],
+    put: [[]],
+    param1: {
+      min: 90,
+      max: 110,
+      name: "underlyingPrice",
+    },
+    param2: {
+      min: 0.05,
+      max: 0.4,
+      name: "variance",
+    },
+    colourParam: "price",
+    numberOfPoints: 20,
+  });
 
   return (
     <div className="flex-1 flex flex-row">
@@ -144,8 +159,12 @@ function Sidebar(props: {
         name: values.param2.paramName,
       },
       colourParam: values.colourParam,
+      numberOfPoints: values.numberOfPoints,
     });
   };
+  useEffect(() => {
+    onSubmit(props.sensitivityForm.getValues());
+  }, []);
 
   const useSliderParams = new Set(["riskFreeRate", "variance"]);
 
@@ -656,6 +675,30 @@ function Sidebar(props: {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={props.sensitivityForm.control}
+                  name="numberOfPoints"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Number of points</FormLabel>
+                      <FormControl>
+                        <DualRangeSlider
+                          className="pb-5"
+                          label={(value) => <span>{value}</span>}
+                          value={[field.value]}
+                          labelPosition="bottom"
+                          onValueChange={(values) => {
+                            const [points] = values.sort((a, b) => a - b);
+                            field.onChange(points);
+                          }}
+                          min={2}
+                          max={100}
+                          step={1}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
                 <Button className=" w-full" type="submit">
                   Calculate
                 </Button>
@@ -673,10 +716,8 @@ function Main({
 }: {
   call: number;
   put: number;
-  sensitivityArr: SensitivityData;
+  sensitivityArr: SensitivityData | undefined;
 }) {
-  const [callHeatmap, putHeatmap] = SensitivityHeatmap(props.sensitivityArr);
-
   return (
     <div className="flex-1 overflow-y-auto">
       <p className="text-3xl px-10 p-5 font-light">
@@ -696,14 +737,11 @@ function Main({
           </p>
         </div>
       </div>
-      <div className="flex flex-row py-5 w-full items-center justify-center">
-        <div>
-          <div>{callHeatmap}</div>
+      {props.sensitivityArr && (
+        <div className="flex flex-row py-5 w-full items-center justify-center">
+          <SensitivityHeatmap {...props.sensitivityArr} />
         </div>
-        <div>
-          <div>{putHeatmap}</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -728,7 +766,7 @@ const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
     (_, i) => param2.min + (i / (call.length - 1)) * (param2.max - param2.min),
   );
 
-  const [chartWidth, setChartWidth] = useState(window.innerWidth * 1  / 3);
+  const [chartWidth, setChartWidth] = useState((window.innerWidth * 1) / 3);
 
   // Update width on window resize
   useEffect(() => {
@@ -782,7 +820,7 @@ const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
     font: { color: currTheme === "dark" ? "white" : "black" },
     width: chartWidth,
     margin: {
-    //   l: 80, // Left margin (axis labels)
+      //   l: 80, // Left margin (axis labels)
       r: 0, // Right margin (less needed)
       t: 30, // Top margin (title spacing)
       b: 40, // Bottom margin (x-axis labels)
@@ -804,10 +842,20 @@ const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
     },
   };
 
-  return [
-    <Plot data={callData} layout={callLayout} />,
-    <Plot data={putData} layout={putLayout} />,
-  ];
+  return (
+    <>
+      <div>
+        <div>
+          <Plot data={callData} layout={callLayout} />,
+        </div>
+      </div>
+      <div>
+        <div>
+          <Plot data={putData} layout={putLayout} />
+        </div>
+      </div>
+    </>
+  );
 };
 
 function ncdf(x: number, mean: number, std: number) {
@@ -840,7 +888,14 @@ function calculateBSMPrice({
   variance,
   riskFreeRate,
 }: BSMInputs) {
-  console.log({ underlyingPrice, strikePrice, timeToMaturity, timeUnit, variance, riskFreeRate });
+  console.log({
+    underlyingPrice,
+    strikePrice,
+    timeToMaturity,
+    timeUnit,
+    variance,
+    riskFreeRate,
+  });
   if (timeUnit === "days") {
     timeToMaturity = timeToMaturity / 251;
   }
@@ -902,10 +957,11 @@ type BSMSensitivity = {
   };
   colourParam: "price" | "delta" | "gamma" | "vega" | "theta";
   colourScheme: string;
+  numberOfPoints: number;
 };
 
 function sensitivityAnalysis(base: BSMInputs, sensitivity: BSMSensitivity) {
-  const n = 20;
+  const n = sensitivity.numberOfPoints;
 
   const param1 = Array.from({ length: n }, (_, i) => {
     return (
@@ -929,8 +985,8 @@ function sensitivityAnalysis(base: BSMInputs, sensitivity: BSMSensitivity) {
     putArr.push([]);
     for (let j = 0; j < n; j++) {
       const newBase = { ...base };
-      newBase[sensitivity.param1.paramName] = param1[i];
-      newBase[sensitivity.param2.paramName] = param2[j];
+      newBase[sensitivity.param1.paramName] = param1[j];
+      newBase[sensitivity.param2.paramName] = param2[i];
       switch (sensitivity.colourParam) {
         case "price":
           const { call, put } = calculateBSMPrice(newBase);

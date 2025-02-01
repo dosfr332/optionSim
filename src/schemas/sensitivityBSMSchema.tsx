@@ -25,6 +25,7 @@ export const BSMSensitivitySchema = z
     }),
     colourParam: z.enum(validColourParams),
     colourScheme: z.string(),
+    numberOfPoints: z.number().min(2).max(100),
   })
   .refine(
     (data) => {
