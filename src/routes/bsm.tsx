@@ -30,8 +30,9 @@ import {
 } from "@/components/ui/accordion";
 import { DualRangeSlider } from "@/components/ui/dual-range-slider";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { data as startingSensitivities } from "@/data/starting-sensitivity";
+import { useEffect, useState } from "react";
+import { data as startingSensitivities } from "@/data/starting-sensitivity";;
+import { useTheme } from "@/components/ui/theme-provider";
 
 export const Route = createFileRoute("/bsm")({
   component: BSM,
@@ -164,7 +165,14 @@ function Sidebar(props: {
                       <FormItem>
                         <FormLabel>Underlying Price</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} {...field} />
+                          <Input
+                            type="number"
+                            min={0}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(e.target.valueAsNumber)
+                            }
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -176,7 +184,14 @@ function Sidebar(props: {
                       <FormItem>
                         <FormLabel>Strike Price</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} {...field} />
+                          <Input
+                            type="number"
+                            min={0}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(e.target.valueAsNumber)
+                            }
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -190,7 +205,14 @@ function Sidebar(props: {
                       <FormItem>
                         <FormLabel>Time to Maturity</FormLabel>
                         <FormControl>
-                          <Input type="number" min={0} {...field} />
+                          <Input
+                            type="number"
+                            min={0}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(e.target.valueAsNumber)
+                            }
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -233,6 +255,9 @@ function Sidebar(props: {
                             max={1}
                             step={0.01}
                             {...field}
+                            onChange={(e) =>
+                              field.onChange(e.target.valueAsNumber)
+                            }
                           />
                         </FormControl>
                       </FormItem>
@@ -243,14 +268,17 @@ function Sidebar(props: {
                     name="riskFreeRate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Risk-Free Rate</FormLabel>
+                        <FormLabel>Risk Free Rate</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
-                            min={-1}
+                            min={0}
                             max={1}
                             step={0.01}
                             {...field}
+                            onChange={(e) =>
+                              field.onChange(e.target.valueAsNumber)
+                            }
                           />
                         </FormControl>
                       </FormItem>
@@ -347,7 +375,7 @@ function Sidebar(props: {
                               }
                               value="riskFreeRate"
                             >
-                              Risk-Free Rate
+                              Risk Free Rate
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -409,7 +437,7 @@ function Sidebar(props: {
                         name="param1.max"
                         render={({ field: fieldMax }) => (
                           <FormItem>
-                            <FormLabel>Variance &sigma;</FormLabel>
+                            <FormLabel>Range</FormLabel>
                             <FormControl>
                               <DualRangeSlider
                                 className="pb-4"
@@ -513,7 +541,7 @@ function Sidebar(props: {
                               }
                               value="riskFreeRate"
                             >
-                              Risk-Free Rate
+                              Risk Free Rate
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -575,7 +603,7 @@ function Sidebar(props: {
                         name="param2.max"
                         render={({ field: fieldMax }) => (
                           <FormItem>
-                            <FormLabel>Variance &sigma;</FormLabel>
+                            <FormLabel>Range</FormLabel>
                             <FormControl>
                               <DualRangeSlider
                                 className="pb-5"
@@ -668,7 +696,7 @@ function Main({
           </p>
         </div>
       </div>
-      <div className="flex flex-col gap-10 p-5 w-full items-center justify-center">
+      <div className="flex flex-row py-5 w-full items-center justify-center">
         <div>
           <div>{callHeatmap}</div>
         </div>
@@ -678,6 +706,11 @@ function Main({
       </div>
     </div>
   );
+}
+
+function camelCaseToWords(s: string) {
+  const result = s.replace(/([A-Z])/g, " $1");
+  return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
 const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
@@ -695,6 +728,15 @@ const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
     (_, i) => param2.min + (i / (call.length - 1)) * (param2.max - param2.min),
   );
 
+  const [chartWidth, setChartWidth] = useState(window.innerWidth * 1  / 3);
+
+  // Update width on window resize
+  useEffect(() => {
+    const handleResize = () => setChartWidth(window.innerWidth / 3);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const callData = [
     {
       x: xValues,
@@ -703,6 +745,7 @@ const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
       type: "heatmap" as const,
       colorscale: "Viridis", // Changeable color scheme
       colorbar: { title: colourParam },
+      hovertemplate: `${camelCaseToWords(param1.name)}: %{x}<br>${camelCaseToWords(param2.name)}: %{y}<br>${camelCaseToWords(colourParam)}: %{z}<extra></extra>`,
     },
   ];
 
@@ -714,19 +757,51 @@ const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
       type: "heatmap" as const,
       colorscale: "Viridis", // Changeable color scheme
       colorbar: { title: colourParam },
+      hovertemplate: `${camelCaseToWords(param1.name)}: %{x}<br>${camelCaseToWords(param2.name)}: %{y}<br>${camelCaseToWords(colourParam)}: %{z}<extra></extra>`,
     },
   ];
 
+  const theme = useTheme();
+
+  let currTheme;
+  if (theme.theme === "system") {
+    currTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  } else {
+    currTheme = theme.theme;
+  }
+
   const callLayout = {
-    title: { text: `Call Option Sensitivity Analysis - ${colourParam}` },
-    xaxis: { title: { text: param1.name} },
-    yaxis: { title: { text: param2.name} },
+    title: { text: `Call Option Sensitivity Analysis` },
+    xaxis: { title: { text: camelCaseToWords(param1.name) } },
+    yaxis: {
+      title: { text: camelCaseToWords(param2.name) },
+    },
+    paper_bgcolor: currTheme === "dark" ? "hsl(222.2 84% 4.9%)" : "white",
+    font: { color: currTheme === "dark" ? "white" : "black" },
+    width: chartWidth,
+    margin: {
+    //   l: 80, // Left margin (axis labels)
+      r: 0, // Right margin (less needed)
+      t: 30, // Top margin (title spacing)
+      b: 40, // Bottom margin (x-axis labels)
+    },
   };
 
   const putLayout = {
-    title: { text: `Put Option Sensitivity Analysis - ${colourParam}` },
-    xaxis: { title: { text: param1.name} },
-    yaxis: { title: { text: param2.name} },
+    title: { text: `Put Option Sensitivity Analysis` },
+    xaxis: { title: { text: camelCaseToWords(param1.name) } },
+    yaxis: { title: { text: camelCaseToWords(param2.name) } },
+    paper_bgcolor: currTheme === "dark" ? "hsl(222.2 84% 4.9%)" : "white",
+    font: { color: currTheme === "dark" ? "white" : "black" },
+    width: chartWidth,
+    margin: {
+      // l: 40, // Left margin (axis labels)
+      r: 10, // Right margin (less needed)
+      t: 30, // Top margin (title spacing)
+      b: 40, // Bottom margin (x-axis labels)
+    },
   };
 
   return [
@@ -765,6 +840,7 @@ function calculateBSMPrice({
   variance,
   riskFreeRate,
 }: BSMInputs) {
+  console.log({ underlyingPrice, strikePrice, timeToMaturity, timeUnit, variance, riskFreeRate });
   if (timeUnit === "days") {
     timeToMaturity = timeToMaturity / 251;
   }
@@ -829,7 +905,7 @@ type BSMSensitivity = {
 };
 
 function sensitivityAnalysis(base: BSMInputs, sensitivity: BSMSensitivity) {
-  const n = 10;
+  const n = 20;
 
   const param1 = Array.from({ length: n }, (_, i) => {
     return (
