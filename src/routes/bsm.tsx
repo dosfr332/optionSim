@@ -32,7 +32,6 @@ import { DualRangeSlider } from "@/components/ui/dual-range-slider";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/components/ui/theme-provider";
-import { Slider } from "@/components/ui/slider";
 
 export const Route = createFileRoute("/bsm")({
   component: BSM,
