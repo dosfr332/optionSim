@@ -25,4 +25,6 @@ dist-ssr
 
 tailwind.config.js
 
+.vscode
+
 

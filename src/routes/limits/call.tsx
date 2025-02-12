@@ -8,7 +8,7 @@ function RouteComponent() {
   return (
     <div className="flex-1">
       <iframe
-        src="https://www.desmos.com/calculator/et4hlukxnm"
+        src="https://www.desmos.com/calculator/3bgapmqynn"
         width="100%"
         height="100%"
       ></iframe>

@@ -31,7 +31,8 @@ import {
 import { DualRangeSlider } from "@/components/ui/dual-range-slider";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useTheme } from "@/components/ui/theme-provider";
+import { camelCaseToWords, getTheme } from "@/lib/utils";
+import { calculateBSMPrice, sensitivityAnalysis } from "@/lib/black-scholes";
 
 export const Route = createFileRoute("/bsm")({
   component: BSM,
@@ -171,8 +172,8 @@ function Sidebar(props: {
     <div className="h-full w-1/4 border-r">
       <Accordion type={"multiple"} className="w-full" defaultValue={["item-1"]}>
         <AccordionItem className="px-2" value="item-1">
-          <AccordionTrigger>Basic BSM Inputs</AccordionTrigger>
-          <AccordionContent className="px-2">
+          <AccordionTrigger className="px-2">Basic BSM Inputs</AccordionTrigger>
+          <AccordionContent className="px-4">
             <Form {...props.basicForm}>
               <form className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -308,8 +309,8 @@ function Sidebar(props: {
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-2" className="px-2">
-          <AccordionTrigger>Sensitivity Analysis</AccordionTrigger>
-          <AccordionContent className="px-2">
+          <AccordionTrigger className="px-2">Sensitivity Analysis</AccordionTrigger>
+          <AccordionContent className="px-4">
             <Form {...props.sensitivityForm}>
               <form
                 onSubmit={props.sensitivityForm.handleSubmit(onSubmit)}
@@ -745,11 +746,6 @@ function Main({
   );
 }
 
-function camelCaseToWords(s: string) {
-  const result = s.replace(/([A-Z])/g, " $1");
-  return result.charAt(0).toUpperCase() + result.slice(1);
-}
-
 const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
   const { call, put, param1, param2, colourParam } = sensitivityData;
 
@@ -798,16 +794,7 @@ const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
     },
   ];
 
-  const theme = useTheme();
-
-  let currTheme;
-  if (theme.theme === "system") {
-    currTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  } else {
-    currTheme = theme.theme;
-  }
+  const currTheme = getTheme();
 
   const callLayout = {
     title: { text: `Call Option Sensitivity Analysis` },
@@ -856,153 +843,3 @@ const SensitivityHeatmap = (sensitivityData: SensitivityData) => {
     </>
   );
 };
-
-function ncdf(x: number, mean: number, std: number) {
-  var x = (x - mean) / std;
-  var t = 1 / (1 + 0.2315419 * Math.abs(x));
-  var d = 0.3989423 * Math.exp((-x * x) / 2);
-  var prob =
-    d *
-    t *
-    (0.3193815 +
-      t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-  if (x > 0) prob = 1 - prob;
-  return prob;
-}
-
-type BSMInputs = {
-  underlyingPrice: number;
-  strikePrice: number;
-  timeToMaturity: number;
-  timeUnit: "days" | "years";
-  variance: number;
-  riskFreeRate: number;
-};
-
-function calculateBSMPrice({
-  underlyingPrice,
-  strikePrice,
-  timeToMaturity,
-  timeUnit,
-  variance,
-  riskFreeRate,
-}: BSMInputs) {
-  console.log({
-    underlyingPrice,
-    strikePrice,
-    timeToMaturity,
-    timeUnit,
-    variance,
-    riskFreeRate,
-  });
-  if (timeUnit === "days") {
-    timeToMaturity = timeToMaturity / 251;
-  }
-  const d1 =
-    (Math.log(underlyingPrice / strikePrice) +
-      (riskFreeRate + variance ** 2 / 2) * timeToMaturity) /
-    (variance * Math.sqrt(timeToMaturity));
-  const d2 = d1 - variance * Math.sqrt(timeToMaturity);
-  const call =
-    underlyingPrice * ncdf(d1, 0, 1) -
-    strikePrice * Math.exp(-riskFreeRate * timeToMaturity) * ncdf(d2, 0, 1);
-  const put =
-    strikePrice * Math.exp(-riskFreeRate * timeToMaturity) * ncdf(-d2, 0, 1) -
-    underlyingPrice * ncdf(-d1, 0, 1);
-  return { call, put };
-}
-
-function calculateBSMDelta({
-  underlyingPrice,
-  strikePrice,
-  timeToMaturity,
-  timeUnit,
-  variance,
-  riskFreeRate,
-}: BSMInputs) {
-  if (timeUnit === "days") {
-    timeToMaturity = timeToMaturity / 251;
-  }
-  const d1 =
-    (Math.log(underlyingPrice / strikePrice) +
-      (riskFreeRate + variance ** 2 / 2) * timeToMaturity) /
-    (variance * Math.sqrt(timeToMaturity));
-
-  const callDelta = ncdf(d1, 0, 1);
-  const putDelta = -ncdf(-d1, 0, 1);
-  return { callDelta, putDelta };
-}
-
-type BSMSensitivity = {
-  param1: {
-    min: number;
-    max: number;
-    paramName:
-      | "underlyingPrice"
-      | "strikePrice"
-      | "timeToMaturity"
-      | "variance"
-      | "riskFreeRate";
-  };
-  param2: {
-    min: number;
-    max: number;
-    paramName:
-      | "underlyingPrice"
-      | "strikePrice"
-      | "timeToMaturity"
-      | "variance"
-      | "riskFreeRate";
-  };
-  colourParam: "price" | "delta" | "gamma" | "vega" | "theta";
-  colourScheme: string;
-  numberOfPoints: number;
-};
-
-function sensitivityAnalysis(base: BSMInputs, sensitivity: BSMSensitivity) {
-  const n = sensitivity.numberOfPoints;
-
-  const param1 = Array.from({ length: n }, (_, i) => {
-    return (
-      sensitivity.param1.min +
-      ((sensitivity.param1.max - sensitivity.param1.min) * i) / (n - 1)
-    );
-  });
-
-  const param2 = Array.from({ length: n }, (_, i) => {
-    return (
-      sensitivity.param2.min +
-      ((sensitivity.param2.max - sensitivity.param2.min) * i) / (n - 1)
-    );
-  });
-
-  const callArr: number[][] = [];
-  const putArr: number[][] = [];
-
-  for (let i = 0; i < n; i++) {
-    callArr.push([]);
-    putArr.push([]);
-    for (let j = 0; j < n; j++) {
-      const newBase = { ...base };
-      newBase[sensitivity.param1.paramName] = param1[j];
-      newBase[sensitivity.param2.paramName] = param2[i];
-      switch (sensitivity.colourParam) {
-        case "price":
-          const { call, put } = calculateBSMPrice(newBase);
-          callArr[i].push(call);
-          putArr[i].push(put);
-          break;
-        case "delta":
-          const { callDelta, putDelta } = calculateBSMDelta(newBase);
-          callArr[i].push(callDelta);
-          putArr[i].push(putDelta);
-          break;
-        default:
-          break;
-      }
-    }
-  }
-
-  console.log([callArr, putArr]);
-  return { call: callArr, put: putArr };
-}

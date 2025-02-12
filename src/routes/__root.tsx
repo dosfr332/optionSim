@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import React from "react";
 type component = {
   title: string;
+  key: string;
   href: string;
   description: string;
   childern?: component[];
@@ -23,52 +24,74 @@ type component = {
 const components: component[] = [
   {
     title: "Option Limits",
+    key: "option-limits",
     href: "./#/limits",
     description: "Calculate option limits",
     childern: [
       {
         title: "Call Option Limits",
+        key: "call-option-limits",
         href: "./#/limits/call",
         description: "Visualise how call options prices are bounded",
       },
       {
         title: "Put Option Limits",
+        key: "put-option-limits",
         href: "./#/limits/put",
         description: "Visualise how put options prices are bounded",
       },
     ],
   },
   {
-    title: "BSM Calculator",
-    href: "./#/bsm",
-    description: "Calculate option prices",
-  },
-  {
     title: "Simulate",
+    key: "simulate",
     href: "./#/simulate",
     description: "Simulate option prices",
+    childern: [
+      {
+        title: "Black-Scholes Model",
+        key: "black-scholes-model",
+        href: "./#/simulation/bsm",
+        description: "Simulate option prices using the Black-Scholes model",
+      },
+      {
+        title: "Heston Model",
+        key: "heston-model",
+        href: "./#/simulation/heston",
+        description: "Simulate option prices using the Heston model",
+      },
+    ],
+  },
+  {
+    title: "BSM Calculator",
+    key: "bsm-calculator",
+    href: "./#/bsm",
+    description: "Calculate option prices",
   },
 ];
 
 export const Route = createRootRoute({
   component: () => (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <div className="flex h-screen w-full px-2 text-lg flex-col">
-        <div className="flex w-full justify-between items-center">
+      <div className="flex h-screen w-full text-lg flex-col">
+        <div className="flex w-full px-2 justify-between items-center">
           <div>
             <NavigationMenu>
               <NavigationMenuList>
-                <NavigationMenuItem className="mr-5">
+                <NavigationMenuItem className="mr-5" key="home">
                   <Link to="/">
                     <Logo size={72} />
                   </Link>
                 </NavigationMenuItem>
-                <NavigationMenuItem></NavigationMenuItem>
+                {/* <NavigationMenuItem></NavigationMenuItem> */}
                 {components.map((component) => {
                   if (component.childern) {
                     return (
-                      <NavigationMenuItem className="mr-5">
-                        <NavigationMenuTrigger className="font-light text-lg mr-5">
+                      <NavigationMenuItem
+                        className="mr-5"
+                        key={component.title}
+                      >
+                        <NavigationMenuTrigger className="font-light text-lg">
                           {component.title}
                         </NavigationMenuTrigger>
                         <NavigationMenuContent>
@@ -88,9 +111,11 @@ export const Route = createRootRoute({
                     );
                   } else {
                     return (
-                      <NavigationMenuItem>
+                      <NavigationMenuItem
+                        key={component.title}
+                      >
                         <NavigationMenuLink
-                          className="mr-5 font-light"
+                          className="mx-5 font-light"
                           href={component.href}
                         >
                           {component.title}
@@ -108,7 +133,7 @@ export const Route = createRootRoute({
         </div>
         <hr />
         <Outlet />
-        <TanStackRouterDevtools position="bottom-right" />
+        {/* <TanStackRouterDevtools position="bottom-right" /> */}
       </div>
     </ThemeProvider>
   ),

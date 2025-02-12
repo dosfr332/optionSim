@@ -13,6 +13,8 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as BsmImport } from './routes/bsm'
 import { Route as IndexImport } from './routes/index'
+import { Route as SimulationHestonImport } from './routes/simulation/heston'
+import { Route as SimulationBsmImport } from './routes/simulation/bsm'
 import { Route as LimitsPutImport } from './routes/limits/put'
 import { Route as LimitsCallImport } from './routes/limits/call'
 
@@ -27,6 +29,18 @@ const BsmRoute = BsmImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SimulationHestonRoute = SimulationHestonImport.update({
+  id: '/simulation/heston',
+  path: '/simulation/heston',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SimulationBsmRoute = SimulationBsmImport.update({
+  id: '/simulation/bsm',
+  path: '/simulation/bsm',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -74,6 +88,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LimitsPutImport
       parentRoute: typeof rootRoute
     }
+    '/simulation/bsm': {
+      id: '/simulation/bsm'
+      path: '/simulation/bsm'
+      fullPath: '/simulation/bsm'
+      preLoaderRoute: typeof SimulationBsmImport
+      parentRoute: typeof rootRoute
+    }
+    '/simulation/heston': {
+      id: '/simulation/heston'
+      path: '/simulation/heston'
+      fullPath: '/simulation/heston'
+      preLoaderRoute: typeof SimulationHestonImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -84,6 +112,8 @@ export interface FileRoutesByFullPath {
   '/bsm': typeof BsmRoute
   '/limits/call': typeof LimitsCallRoute
   '/limits/put': typeof LimitsPutRoute
+  '/simulation/bsm': typeof SimulationBsmRoute
+  '/simulation/heston': typeof SimulationHestonRoute
 }
 
 export interface FileRoutesByTo {
@@ -91,6 +121,8 @@ export interface FileRoutesByTo {
   '/bsm': typeof BsmRoute
   '/limits/call': typeof LimitsCallRoute
   '/limits/put': typeof LimitsPutRoute
+  '/simulation/bsm': typeof SimulationBsmRoute
+  '/simulation/heston': typeof SimulationHestonRoute
 }
 
 export interface FileRoutesById {
@@ -99,14 +131,35 @@ export interface FileRoutesById {
   '/bsm': typeof BsmRoute
   '/limits/call': typeof LimitsCallRoute
   '/limits/put': typeof LimitsPutRoute
+  '/simulation/bsm': typeof SimulationBsmRoute
+  '/simulation/heston': typeof SimulationHestonRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/bsm' | '/limits/call' | '/limits/put'
+  fullPaths:
+    | '/'
+    | '/bsm'
+    | '/limits/call'
+    | '/limits/put'
+    | '/simulation/bsm'
+    | '/simulation/heston'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/bsm' | '/limits/call' | '/limits/put'
-  id: '__root__' | '/' | '/bsm' | '/limits/call' | '/limits/put'
+  to:
+    | '/'
+    | '/bsm'
+    | '/limits/call'
+    | '/limits/put'
+    | '/simulation/bsm'
+    | '/simulation/heston'
+  id:
+    | '__root__'
+    | '/'
+    | '/bsm'
+    | '/limits/call'
+    | '/limits/put'
+    | '/simulation/bsm'
+    | '/simulation/heston'
   fileRoutesById: FileRoutesById
 }
 
@@ -115,6 +168,8 @@ export interface RootRouteChildren {
   BsmRoute: typeof BsmRoute
   LimitsCallRoute: typeof LimitsCallRoute
   LimitsPutRoute: typeof LimitsPutRoute
+  SimulationBsmRoute: typeof SimulationBsmRoute
+  SimulationHestonRoute: typeof SimulationHestonRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -122,6 +177,8 @@ const rootRouteChildren: RootRouteChildren = {
   BsmRoute: BsmRoute,
   LimitsCallRoute: LimitsCallRoute,
   LimitsPutRoute: LimitsPutRoute,
+  SimulationBsmRoute: SimulationBsmRoute,
+  SimulationHestonRoute: SimulationHestonRoute,
 }
 
 export const routeTree = rootRoute
@@ -137,7 +194,9 @@ export const routeTree = rootRoute
         "/",
         "/bsm",
         "/limits/call",
-        "/limits/put"
+        "/limits/put",
+        "/simulation/bsm",
+        "/simulation/heston"
       ]
     },
     "/": {
@@ -151,6 +210,12 @@ export const routeTree = rootRoute
     },
     "/limits/put": {
       "filePath": "limits/put.tsx"
+    },
+    "/simulation/bsm": {
+      "filePath": "simulation/bsm.tsx"
+    },
+    "/simulation/heston": {
+      "filePath": "simulation/heston.tsx"
     }
   }
 }
