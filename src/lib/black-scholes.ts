@@ -80,8 +80,7 @@ type BSMSensitivity = {
       | "variance"
       | "riskFreeRate";
   };
-  colourParam: "price" | "delta" | "gamma" | "vega" | "theta";
-  colourScheme: string;
+  colorParam: "price" | "delta" | "gamma" | "vega" | "theta";
   numberOfPoints: number;
 };
 
@@ -112,7 +111,7 @@ export function sensitivityAnalysis(base: BSMInputs, sensitivity: BSMSensitivity
       const newBase = { ...base };
       newBase[sensitivity.param1.paramName] = param1[j];
       newBase[sensitivity.param2.paramName] = param2[i];
-      switch (sensitivity.colourParam) {
+      switch (sensitivity.colorParam) {
         case "price":
           const { call, put } = calculateBSMPrice(newBase);
           callArr[i].push(call);

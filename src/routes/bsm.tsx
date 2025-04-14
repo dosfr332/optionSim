@@ -30,107 +30,73 @@ import {
 } from "@/components/ui/accordion";
 import { DualRangeSlider } from "@/components/ui/dual-range-slider";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { camelCaseToWords, getTheme } from "@/lib/utils";
-import { calculateBSMPrice, sensitivityAnalysis } from "@/lib/black-scholes";
+import { sensitivityAnalysis } from "@/lib/black-scholes";
+import { BSMModel } from "@/lib/BSMModel";
+import { SensitivityAnalysis } from "@/lib/sensitivity";
 
 export const Route = createFileRoute("/bsm")({
   component: BSM,
 });
 
-type SensitivityData = {
-  call: number[][];
-  put: number[][];
-  param1: {
-    min: number;
-    max: number;
-    name:
-      | "underlyingPrice"
-      | "strikePrice"
-      | "timeToMaturity"
-      | "variance"
-      | "riskFreeRate";
-  };
-  param2: {
-    min: number;
-    max: number;
-    name:
-      | "underlyingPrice"
-      | "strikePrice"
-      | "timeToMaturity"
-      | "variance"
-      | "riskFreeRate";
-  };
-  colourParam: "price" | "delta" | "gamma" | "vega" | "theta";
-  numberOfPoints: number;
-};
 
 function BSM() {
+  const bsmModel = new BSMModel({
+    underlyingPrice: 95,
+    strikePrice: 100,
+    timeToMaturity: 1,
+    timeUnit: "years",
+    variance: 0.2,
+    riskFreeRate: 0.05,
+  });
+
   const basicForm = useForm<z.infer<typeof BSMInputsSchema>>({
-    defaultValues: {
-      underlyingPrice: 95,
-      strikePrice: 100,
-      timeToMaturity: 1,
-      timeUnit: "years",
-      variance: 0.2,
-      riskFreeRate: 0.05,
-    },
+    defaultValues: bsmModel.modelParams,
     resolver: zodResolver(BSMInputsSchema),
   });
 
   const sensitivityForm = useForm<z.infer<typeof BSMSensitivitySchema>>({
     defaultValues: {
-      param1: {
-        min: 90,
-        max: 110,
-        paramName: "underlyingPrice",
-      },
-      param2: {
-        min: 0.05,
-        max: 0.4,
-        paramName: "variance",
-      },
-      colourParam: "price",
-      colourScheme: "viridis",
-      numberOfPoints: 20,
-    },
-    resolver: zodResolver(BSMSensitivitySchema),
-  });
-
-  const { call, put } = calculateBSMPrice({
-    underlyingPrice: basicForm.watch("underlyingPrice"),
-    strikePrice: basicForm.watch("strikePrice"),
-    timeToMaturity: basicForm.watch("timeToMaturity"),
-    timeUnit: basicForm.watch("timeUnit"),
-    variance: basicForm.watch("variance"),
-    riskFreeRate: basicForm.watch("riskFreeRate"),
-  });
-
-  const [sensitivityData, setSensitivityData] = useState<SensitivityData>({
-    call: [[]],
-    put: [[]],
+    // call: [[]],
+    // put: [[]],
     param1: {
       min: 90,
       max: 110,
-      name: "underlyingPrice",
+      paramName: "underlyingPrice",
     },
     param2: {
       min: 0.05,
       max: 0.4,
-      name: "variance",
+      paramName: "variance",
     },
-    colourParam: "price",
+    colorParam: "price",
     numberOfPoints: 20,
+  },
+    resolver: zodResolver(BSMSensitivitySchema),
   });
+
+  bsmModel.modelParams = basicForm.watch();
+
+  const sensitivity = new SensitivityAnalysis<
+
+  type BSMContext = {
+    model : BSMModel
+    sensitivity: 
+  }
+
+  const Context = createContext<BSMModel>(bsmModel);
 
   return (
     <div className="flex-1 flex flex-row">
-      <Sidebar
-        basicForm={basicForm}
-        sensitivityForm={sensitivityForm}
-        setSensitivityArr={setSensitivityData}
-      />
-      <Main {...{ call: call, put: put, sensitivityArr: sensitivityData }} />
+      <Context.Provider value={bsmModel}>
+        <Sidebar
+          basicForm={basicForm}
+          sensitivityForm={sensitivityForm}
+          setSensitivityArr={setSensitivityData}
+        />
+        <Main {...{ model: bsmModel, sensitivityArr: sensitivityData }} />
+      </Context.Provider>
     </div>
   );
 }
@@ -158,10 +124,11 @@ function Sidebar(props: {
         max: values.param2.max,
         name: values.param2.paramName,
       },
-      colourParam: values.colourParam,
+      colourParam: values.colorParam,
       numberOfPoints: values.numberOfPoints,
     });
   };
+
   useEffect(() => {
     onSubmit(props.sensitivityForm.getValues());
   }, []);
@@ -309,7 +276,9 @@ function Sidebar(props: {
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-2" className="px-2">
-          <AccordionTrigger className="px-2">Sensitivity Analysis</AccordionTrigger>
+          <AccordionTrigger className="px-2">
+            Sensitivity Analysis
+          </AccordionTrigger>
           <AccordionContent className="px-4">
             <Form {...props.sensitivityForm}>
               <form
@@ -714,8 +683,7 @@ function Sidebar(props: {
 function Main({
   ...props
 }: {
-  call: number;
-  put: number;
+  model: BSMModel;
   sensitivityArr: SensitivityData | undefined;
 }) {
   return (
@@ -727,13 +695,13 @@ function Main({
         <div className="w-1/3 bg-green-500 rounded p-5 text-center">
           <p className="text-lg font-light">
             {" "}
-            Call Price: {Math.round(props.call * 1000) / 1000}{" "}
+            Call Price: {Math.round(props.model.callPrice() * 1000) / 1000}{" "}
           </p>
         </div>
         <div className="w-1/3 bg-red-500 rounded p-5 text-center">
           <p className="text-lg font-light">
             {" "}
-            Put Price: {Math.round(props.put * 1000) / 1000}{" "}
+            Put Price: {Math.round(props.model.putPrice() * 1000) / 1000}{" "}
           </p>
         </div>
       </div>

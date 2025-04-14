@@ -5,7 +5,7 @@ import {
   BSMGirsanov3,
 } from "@/components/equations/bsm/bsm-girsanov";
 import { Button } from "@/components/ui/button";
-import { BSMModel } from "@/lib/simulate";
+import { BSMModel } from "@/lib/BSMModel";
 import { cn, getTheme } from "@/lib/utils";
 import { Accordion } from "@radix-ui/react-accordion";
 import { createFileRoute } from "@tanstack/react-router";
@@ -65,10 +65,9 @@ function Main({
     timeUnit: "years",
     variance: 0.2,
     riskFreeRate: 0.05,
-    numSteps: 1000,
   });
 
-  const simulationData = bsmSimulation.generatePaths(5000);
+  const simulationData = bsmSimulation.generatePaths(1000, 5000);
 
   return (
     <div className="flex-1 overflow-y-auto">
